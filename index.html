@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>근로 서약서</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/4.1.7/signature_pad.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; background: #f5f6fa; min-height: 100vh; display: flex; justify-content: center; padding: 2rem 1rem; }
+  .container { background: #fff; border-radius: 12px; box-shadow: 0 2px 20px rgba(0,0,0,0.08); padding: 2.5rem 2rem; width: 100%; max-width: 640px; height: fit-content; }
+  .doc-header { text-align: center; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid #1a3a6b; }
+  .doc-title { font-size: 24px; font-weight: 700; color: #1a3a6b; letter-spacing: 8px; margin-bottom: 4px; }
+  .doc-sub { font-size: 13px; color: #888; letter-spacing: 1px; }
+  .section-label { font-size: 11px; font-weight: 700; color: #1a3a6b; letter-spacing: 2px; text-transform: uppercase; margin: 1.5rem 0 0.75rem; }
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field-grid.full { grid-template-columns: 1fr; }
+  .field-group { display: flex; flex-direction: column; gap: 4px; }
+  .field-group label { font-size: 12px; color: #666; padding-left: 2px; }
+  .field-group input, .field-group select {
+    height: 40px; padding: 0 12px; font-size: 14px;
+    border: 1px solid #dde1ea; border-radius: 8px;
+    background: #fff; color: #222; width: 100%;
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+  }
+  .field-group input:focus, .field-group select:focus {
+    outline: none; border-color: #1a3a6b;
+    box-shadow: 0 0 0 3px rgba(26,58,107,0.1);
+  }
+  .pledge-box {
+    background: #f0f4fb; border: 1px solid #d0daea;
+    border-radius: 8px; padding: 1rem 1.25rem; margin: 0.75rem 0;
+  }
+  .pledge-box p { font-size: 13px; color: #444; line-height: 1.9; }
+  .pledge-box ol { padding-left: 1.2rem; margin-top: 8px; }
+  .pledge-box ol li { font-size: 13px; color: #444; line-height: 1.9; margin-bottom: 2px; }
+  .sig-area {
+    border: 1px solid #dde1ea; border-radius: 8px;
+    overflow: hidden; position: relative; background: #fff;
+  }
+  canvas#sig { display: block; width: 100%; height: 150px; cursor: crosshair; touch-action: none; }
+  .sig-clear {
+    position: absolute; top: 8px; right: 8px; font-size: 11px;
+    padding: 4px 12px; border: 1px solid #dde1ea; border-radius: 6px;
+    background: #fff; color: #666; cursor: pointer;
+    font-family: 'Malgun Gothic', sans-serif;
+  }
+  .sig-clear:hover { background: #f5f6fa; }
+  .sig-hint {
+    position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; color: #bbb; pointer-events: none; white-space: nowrap;
+  }
+  .err { font-size: 11px; color: #c0392b; padding-left: 2px; margin-top: 2px; display: none; }
+  .btn-row { display: flex; gap: 10px; margin-top: 1.5rem; }
+  .btn-reset {
+    flex: 1; height: 46px; background: #fff; color: #555;
+    border: 1px solid #dde1ea; border-radius: 8px;
+    font-size: 14px; cursor: pointer;
+    font-family: 'Malgun Gothic', sans-serif;
+  }
+  .btn-reset:hover { background: #f5f6fa; }
+  .btn-pdf {
+    flex: 2; height: 46px; background: #1a3a6b; color: #fff;
+    border: none; border-radius: 8px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    font-family: 'Malgun Gothic', sans-serif; letter-spacing: 1px;
+  }
+  .btn-pdf:hover { background: #152f58; }
+  .btn-pdf:active { transform: scale(0.98); }
+  .btn-pdf:disabled { background: #8fa3c0; cursor: not-allowed; }
+  .toast {
+    display: none; position: fixed; top: 20px; left: 50%;
+    transform: translateX(-50%); background: #1a3a6b; color: #fff;
+    font-size: 14px; padding: 12px 24px; border-radius: 8px;
+    z-index: 9999; white-space: nowrap;
+    font-family: 'Malgun Gothic', sans-serif;
+  }
+  .toast.show { display: block; }
+  @media (max-width: 480px) {
+    .container { padding: 1.5rem 1rem; }
+    .field-grid { grid-template-columns: 1fr; }
+    .doc-title { font-size: 20px; letter-spacing: 4px; }
+  }
+
+  /* PDF 미리보기 (화면 밖에 숨겨둠) */
+  #previewWrap { position: fixed; top: -9999px; left: -9999px; }
+  #preview {
+    background: #fff; padding: 48px 44px;
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    color: #111; width: 620px;
+  }
+  #preview .p-title { font-size: 22px; font-weight: 700; text-align: center; letter-spacing: 8px; margin-bottom: 4px; color: #1a3a6b; }
+  #preview .p-sub { font-size: 12px; text-align: center; color: #777; letter-spacing: 2px; margin-bottom: 24px; }
+  #preview hr { border: none; border-top: 2px solid #1a3a6b; margin-bottom: 20px; }
+  #preview table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+  #preview table td { padding: 8px 10px; border: 1px solid #ccc; }
+  #preview table td.th { background: #e8eef8; font-weight: 700; width: 22%; color: #1a3a6b; }
+  #preview .p-pledge-title { font-size: 14px; font-weight: 700; margin: 20px 0 8px; color: #1a3a6b; text-align: center; }
+  #preview .p-intro { font-size: 13px; line-height: 1.8; color: #333; margin-bottom: 10px; }
+  #preview ol { padding-left: 1.4rem; margin-bottom: 16px; }
+  #preview ol li { font-size: 13px; line-height: 1.9; color: #333; margin-bottom: 2px; }
+  #preview .p-footer { margin-top: 32px; font-size: 13px; text-align: center; }
+  #preview .p-sig-row { display: flex; justify-content: flex-end; align-items: flex-end; gap: 12px; margin-top: 16px; }
+  #preview .p-sig-label { font-size: 13px; color: #333; margin-bottom: 4px; }
+  #preview .p-sig-box { border: 1px solid #ccc; width: 180px; height: 80px; padding: 4px; }
+  #preview img.sig-img { width: 100%; height: 100%; object-fit: contain; }
+  #preview .p-company { margin-top: 20px; font-size: 12px; color: #888; text-align: center; border-top: 1px dashed #ccc; padding-top: 12px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="doc-header">
+    <div class="doc-title">근 로 서 약 서</div>
+    <div class="doc-sub">일용직 근로자 작성용</div>
+  </div>
+
+  <div class="section-label">▪ 인적 사항</div>
+  <div class="field-grid">
+    <div class="field-group">
+      <label>성명 *</label>
+      <input type="text" id="f_name" placeholder="홍길동">
+      <span class="err" id="err_name">성명을 입력해주세요</span>
+    </div>
+    <div class="field-group">
+      <label>생년월일 *</label>
+      <input type="date" id="f_birth">
+      <span class="err" id="err_birth">생년월일을 입력해주세요</span>
+    </div>
+    <div class="field-group">
+      <label>연락처 *</label>
+      <input type="tel" id="f_phone" placeholder="010-0000-0000">
+      <span class="err" id="err_phone">연락처를 입력해주세요</span>
+    </div>
+    <div class="field-group">
+      <label>성별</label>
+      <select id="f_gender">
+        <option value="">선택</option>
+        <option value="남">남</option>
+        <option value="여">여</option>
+      </select>
+    </div>
+  </div>
+  <div class="field-grid full" style="margin-top:10px">
+    <div class="field-group">
+      <label>주소 *</label>
+      <input type="text" id="f_addr" placeholder="예: 인천광역시 미추홀구 ...">
+      <span class="err" id="err_addr">주소를 입력해주세요</span>
+    </div>
+  </div>
+
+  <div class="section-label">▪ 근무 정보</div>
+  <div class="field-grid">
+    <div class="field-group">
+      <label>근무 시작일 *</label>
+      <input type="date" id="f_start">
+      <span class="err" id="err_start">근무 시작일을 입력해주세요</span>
+    </div>
+    <div class="field-group">
+      <label>근무 종료일</label>
+      <input type="date" id="f_end">
+    </div>
+    <div class="field-group">
+      <label>근무지 *</label>
+      <input type="text" id="f_site" placeholder="현장명 또는 사업장명">
+      <span class="err" id="err_site">근무지를 입력해주세요</span>
+    </div>
+    <div class="field-group">
+      <label>담당 업무</label>
+      <input type="text" id="f_job" placeholder="예: 단순노무, 현장 보조">
+    </div>
+  </div>
+
+  <div class="section-label">▪ 서약 내용</div>
+  <div class="pledge-box">
+    <p>본인은 아래 사항을 성실히 이행할 것을 서약합니다.</p>
+    <ol>
+      <li>근로기준법 및 회사의 제반 규정과 지시를 성실히 준수하겠습니다.</li>
+      <li>업무 수행 중 취득한 회사의 기밀 및 개인정보를 외부에 누설하지 않겠습니다.</li>
+      <li>안전 수칙을 철저히 준수하며, 타 근로자의 안전을 위협하는 행위를 하지 않겠습니다.</li>
+      <li>무단결근·지각·조퇴 등 근무 태만 행위를 하지 않겠습니다.</li>
+      <li>회사 재산을 소중히 다루며, 고의 또는 과실로 손해를 끼친 경우 이를 배상하겠습니다.</li>
+      <li>본 서약을 위반할 경우 회사의 정당한 제재를 감수하겠습니다.</li>
+    </ol>
+  </div>
+
+  <div class="section-label">▪ 서명</div>
+  <div class="sig-area">
+    <canvas id="sig"></canvas>
+    <button class="sig-clear" onclick="clearSig()">지우기</button>
+    <div class="sig-hint" id="sigHint">이 곳에 서명하세요 (마우스 또는 터치)</div>
+  </div>
+  <span class="err" id="err_sig">서명을 해주세요</span>
+
+  <div class="btn-row">
+    <button class="btn-reset" onclick="resetAll()">초기화</button>
+    <button class="btn-pdf" id="btnPdf" onclick="generatePDF()">📄 PDF 생성 및 다운로드</button>
+  </div>
+</div>
+
+<!-- PDF용 미리보기 (숨김) -->
+<div id="previewWrap">
+  <div id="preview">
+    <div class="p-title">근 로 서 약 서</div>
+    <div class="p-sub">일용직 근로자 작성용</div>
+    <hr>
+    <table>
+      <tr>
+        <td class="th">성  명</td><td id="p_name"></td>
+        <td class="th">성  별</td><td id="p_gender"></td>
+      </tr>
+      <tr>
+        <td class="th">생년월일</td><td id="p_birth"></td>
+        <td class="th">연락처</td><td id="p_phone"></td>
+      </tr>
+      <tr><td class="th">주  소</td><td colspan="3" id="p_addr"></td></tr>
+      <tr><td class="th">근 무 지</td><td colspan="3" id="p_site"></td></tr>
+      <tr><td class="th">근무 기간</td><td colspan="3" id="p_period"></td></tr>
+      <tr><td class="th">담당 업무</td><td colspan="3" id="p_job"></td></tr>
+    </table>
+
+    <div class="p-pledge-title">[ 서 약 내 용 ]</div>
+    <div class="p-intro">본인은 아래 사항을 성실히 이행할 것을 서약합니다.</div>
+    <ol>
+      <li>근로기준법 및 회사의 제반 규정과 지시를 성실히 준수하겠습니다.</li>
+      <li>업무 수행 중 취득한 회사의 기밀 및 개인정보를 외부에 누설하지 않겠습니다.</li>
+      <li>안전 수칙을 철저히 준수하며, 타 근로자의 안전을 위협하는 행위를 하지 않겠습니다.</li>
+      <li>무단결근·지각·조퇴 등 근무 태만 행위를 하지 않겠습니다.</li>
+      <li>회사 재산을 소중히 다루며, 고의 또는 과실로 손해를 끼친 경우 이를 배상하겠습니다.</li>
+      <li>본 서약을 위반할 경우 회사의 정당한 제재를 감수하겠습니다.</li>
+    </ol>
+    <div class="p-intro">위와 같이 서약합니다.</div>
+
+    <div class="p-footer">
+      <div id="p_date"></div>
+      <div class="p-sig-row">
+        <div>
+          <div class="p-sig-label">서약인 : <span id="p_sig_name"></span> (인)</div>
+          <div class="p-sig-box">
+            <img id="p_sig_img" class="sig-img" alt="서명">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="p-company">본 서약서는 회사 1부, 근로자 1부 각각 보관합니다.</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let sigPad;
+
+window.addEventListener('load', () => {
+  const canvas = document.getElementById('sig');
+  function resizeCanvas() {
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    canvas.width = canvas.offsetWidth * ratio;
+    canvas.height = canvas.offsetHeight * ratio;
+    canvas.getContext('2d').scale(ratio, ratio);
+    if (sigPad) sigPad.clear();
+  }
+  resizeCanvas();
+  sigPad = new SignaturePad(canvas, { minWidth: 1.5, maxWidth: 2.8, penColor: '#1a3a6b' });
+  sigPad.addEventListener('beginStroke', () => {
+    document.getElementById('sigHint').style.display = 'none';
+  });
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f_start').value = today;
+});
+
+function clearSig() {
+  sigPad.clear();
+  document.getElementById('sigHint').style.display = 'block';
+}
+
+function resetAll() {
+  ['f_name','f_birth','f_phone','f_addr','f_start','f_end','f_site','f_job'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f_gender').value = '';
+  clearSig();
+  document.querySelectorAll('.err').forEach(e => e.style.display = 'none');
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f_start').value = today;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function fmtDate(val) {
+  if (!val) return '';
+  const [y, m, d] = val.split('-');
+  return `${y}년 ${m}월 ${d}일`;
+}
+
+function validate() {
+  let ok = true;
+  const checks = [
+    { id: 'f_name', err: 'err_name' },
+    { id: 'f_birth', err: 'err_birth' },
+    { id: 'f_phone', err: 'err_phone' },
+    { id: 'f_addr', err: 'err_addr' },
+    { id: 'f_start', err: 'err_start' },
+    { id: 'f_site', err: 'err_site' },
+  ];
+  checks.forEach(({ id, err }) => {
+    const val = document.getElementById(id).value.trim();
+    const errEl = document.getElementById(err);
+    if (!val) { errEl.style.display = 'block'; ok = false; }
+    else errEl.style.display = 'none';
+  });
+  if (sigPad.isEmpty()) {
+    document.getElementById('err_sig').style.display = 'block';
+    ok = false;
+  } else {
+    document.getElementById('err_sig').style.display = 'none';
+  }
+  return ok;
+}
+
+async function generatePDF() {
+  if (!validate()) { showToast('⚠ 필수 항목을 모두 입력해주세요'); return; }
+
+  const btn = document.getElementById('btnPdf');
+  btn.textContent = 'PDF 생성 중...';
+  btn.disabled = true;
+
+  const name   = document.getElementById('f_name').value.trim();
+  const birth  = document.getElementById('f_birth').value;
+  const phone  = document.getElementById('f_phone').value.trim();
+  const addr   = document.getElementById('f_addr').value.trim();
+  const gender = document.getElementById('f_gender').value;
+  const start  = document.getElementById('f_start').value;
+  const end    = document.getElementById('f_end').value;
+  const site   = document.getElementById('f_site').value.trim();
+  const job    = document.getElementById('f_job').value.trim();
+
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일`;
+  const period = end ? `${fmtDate(start)} ~ ${fmtDate(end)}` : `${fmtDate(start)} ~`;
+
+  document.getElementById('p_name').textContent = name;
+  document.getElementById('p_birth').textContent = fmtDate(birth);
+  document.getElementById('p_phone').textContent = phone;
+  document.getElementById('p_addr').textContent = addr;
+  document.getElementById('p_gender').textContent = gender || '-';
+  document.getElementById('p_site').textContent = site;
+  document.getElementById('p_period').textContent = period;
+  document.getElementById('p_job').textContent = job || '-';
+  document.getElementById('p_date').textContent = dateStr;
+  document.getElementById('p_sig_name').textContent = name;
+  document.getElementById('p_sig_img').src = sigPad.toDataURL();
+
+  await new Promise(r => setTimeout(r, 300));
+
+  try {
+    const preview = document.getElementById('preview');
+    const canvas = await html2canvas(preview, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false
+    });
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pW = pdf.internal.pageSize.getWidth();
+    const pH = pdf.internal.pageSize.getHeight();
+    const imgRatio = canvas.width / canvas.height;
+    const imgH = pW / imgRatio;
+
+    if (imgH <= pH) {
+      pdf.addImage(imgData, 'PNG', 0, 0, pW, imgH);
+    } else {
+      const pages = Math.ceil(imgH / pH);
+      for (let i = 0; i < pages; i++) {
+        if (i > 0) pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, -i * pH, pW, imgH);
+      }
+    }
+
+    const mm = String(today.getMonth()+1).padStart(2,'0');
+    const dd = String(today.getDate()).padStart(2,'0');
+    pdf.save(`근로서약서_${name}_${today.getFullYear()}${mm}${dd}.pdf`);
+    showToast(`✅ 근로서약서_${name}.pdf 다운로드 완료`);
+  } catch (e) {
+    showToast('❌ PDF 생성 중 오류가 발생했습니다');
+    console.error(e);
+  }
+
+  btn.textContent = '📄 PDF 생성 및 다운로드';
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
