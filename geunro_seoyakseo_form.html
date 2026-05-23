@@ -1,0 +1,319 @@
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/4.1.7/signature_pad.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<h2 class="sr-only">일용직 근로 서약서 작성 양식</h2>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.wrap{padding:1.5rem 0;max-width:660px}
+.doc-header{text-align:center;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:2px solid #1a3a6b}
+.doc-title{font-size:22px;font-weight:500;color:#1a3a6b;letter-spacing:6px;margin-bottom:4px}
+.doc-sub{font-size:13px;color:var(--color-text-secondary);letter-spacing:1px}
+.section-label{font-size:11px;font-weight:500;color:#1a3a6b;letter-spacing:2px;text-transform:uppercase;margin:1.5rem 0 0.75rem;padding-left:2px}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-grid.full{grid-template-columns:1fr}
+.field-group{display:flex;flex-direction:column;gap:4px}
+.field-group label{font-size:12px;color:var(--color-text-secondary);padding-left:2px}
+.field-group input,.field-group select{height:38px;padding:0 10px;font-size:14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);width:100%}
+.field-group input:focus,.field-group select:focus{outline:none;border-color:#1a3a6b;box-shadow:0 0 0 2px rgba(26,58,107,0.12)}
+.pledge-box{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:1rem 1.25rem;margin:0.75rem 0}
+.pledge-box p{font-size:13px;color:var(--color-text-secondary);line-height:1.9;margin:0}
+.pledge-box ol{padding-left:1.2rem}
+.pledge-box ol li{font-size:13px;color:var(--color-text-secondary);line-height:1.9;margin-bottom:2px}
+.sig-area{border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);overflow:hidden;position:relative;background:var(--color-background-primary)}
+canvas#sig{display:block;width:100%;height:140px;cursor:crosshair;touch-action:none}
+.sig-clear{position:absolute;top:8px;right:8px;font-size:11px;padding:3px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer}
+.sig-clear:hover{background:var(--color-background-secondary)}
+.sig-hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--color-text-tertiary);pointer-events:none;white-space:nowrap}
+.btn-row{display:flex;gap:10px;margin-top:1.5rem}
+.btn-primary{flex:1;height:44px;background:#1a3a6b;color:#fff;border:none;border-radius:var(--border-radius-md);font-size:14px;font-weight:500;cursor:pointer;letter-spacing:0.5px}
+.btn-primary:hover{background:#152f58}
+.btn-primary:active{transform:scale(0.98)}
+.btn-secondary{flex:1;height:44px;background:var(--color-background-primary);color:var(--color-text-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:14px;cursor:pointer}
+.btn-secondary:hover{background:var(--color-background-secondary)}
+.toast{display:none;position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#1a3a6b;color:#fff;font-size:13px;padding:10px 20px;border-radius:var(--border-radius-md);z-index:999}
+.toast.show{display:block}
+.err{font-size:11px;color:#c0392b;padding-left:2px;margin-top:2px;display:none}
+
+.preview-wrap{display:none;margin-top:2rem;border-top:0.5px solid var(--color-border-tertiary);padding-top:2rem}
+#preview{background:#fff;padding:40px;font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;color:#111;width:600px;min-height:800px}
+#preview .p-title{font-size:22px;font-weight:700;text-align:center;letter-spacing:8px;margin-bottom:4px;color:#1a3a6b}
+#preview .p-sub{font-size:12px;text-align:center;color:#555;letter-spacing:2px;margin-bottom:28px}
+#preview hr{border:none;border-top:2px solid #1a3a6b;margin-bottom:20px}
+#preview table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px}
+#preview table td{padding:7px 10px;border:1px solid #ccc}
+#preview table td:first-child{background:#eaf0fa;font-weight:600;width:30%;color:#1a3a6b}
+#preview .p-pledge-title{font-size:13px;font-weight:700;margin:20px 0 8px;color:#1a3a6b}
+#preview .p-intro{font-size:13px;line-height:1.8;color:#333;margin-bottom:10px}
+#preview ol{padding-left:1.4rem;margin-bottom:16px}
+#preview ol li{font-size:13px;line-height:1.9;color:#333;margin-bottom:2px}
+#preview .p-footer{margin-top:28px;font-size:13px;text-align:center;line-height:2}
+#preview .p-sig-row{display:flex;justify-content:flex-end;align-items:flex-end;gap:12px;margin-top:12px}
+#preview .p-sig-label{font-size:13px;color:#333;margin-bottom:4px}
+#preview .p-sig-box{border:1px solid #ccc;padding:4px;width:160px}
+#preview img.sig-img{width:100%;height:70px;object-fit:contain}
+</style>
+
+<div class="wrap">
+  <div class="doc-header">
+    <div class="doc-title">근 로 서 약 서</div>
+    <div class="doc-sub">일용직 근로자 작성용</div>
+  </div>
+
+  <div class="section-label">인적 사항</div>
+  <div class="field-grid">
+    <div class="field-group">
+      <label>성명 *</label>
+      <input type="text" id="f_name" placeholder="홍길동">
+      <span class="err" id="err_name">성명을 입력해주세요</span>
+    </div>
+    <div class="field-group">
+      <label>생년월일 *</label>
+      <input type="date" id="f_birth">
+      <span class="err" id="err_birth">생년월일을 입력해주세요</span>
+    </div>
+    <div class="field-group">
+      <label>연락처 *</label>
+      <input type="tel" id="f_phone" placeholder="010-0000-0000">
+      <span class="err" id="err_phone">연락처를 입력해주세요</span>
+    </div>
+    <div class="field-group">
+      <label>성별</label>
+      <select id="f_gender">
+        <option value="">선택</option>
+        <option value="남">남</option>
+        <option value="여">여</option>
+      </select>
+    </div>
+  </div>
+  <div class="field-grid full" style="margin-top:10px">
+    <div class="field-group">
+      <label>주소 *</label>
+      <input type="text" id="f_addr" placeholder="서울특별시 강남구 ...">
+      <span class="err" id="err_addr">주소를 입력해주세요</span>
+    </div>
+  </div>
+
+  <div class="section-label">근무 정보</div>
+  <div class="field-grid">
+    <div class="field-group">
+      <label>근무 시작일 *</label>
+      <input type="date" id="f_start">
+      <span class="err" id="err_start">근무 시작일을 입력해주세요</span>
+    </div>
+    <div class="field-group">
+      <label>근무 종료일</label>
+      <input type="date" id="f_end">
+    </div>
+    <div class="field-group">
+      <label>근무지 *</label>
+      <input type="text" id="f_site" placeholder="현장명 또는 사업장 주소">
+      <span class="err" id="err_site">근무지를 입력해주세요</span>
+    </div>
+    <div class="field-group">
+      <label>담당 업무</label>
+      <input type="text" id="f_job" placeholder="예: 단순노무, 현장 보조 등">
+    </div>
+  </div>
+
+  <div class="section-label">서약 내용</div>
+  <div class="pledge-box">
+    <p>본인은 아래 사항을 성실히 이행할 것을 서약합니다.</p>
+    <ol style="margin-top:8px">
+      <li>근로기준법 및 회사의 제반 규정과 지시를 성실히 준수하겠습니다.</li>
+      <li>업무 수행 중 취득한 회사의 기밀 및 개인정보를 외부에 누설하지 않겠습니다.</li>
+      <li>안전 수칙을 철저히 준수하며, 타 근로자의 안전을 위협하는 행위를 하지 않겠습니다.</li>
+      <li>무단결근·지각·조퇴 등 근무 태만 행위를 하지 않겠습니다.</li>
+      <li>회사 재산을 소중히 다루며, 고의 또는 과실로 손해를 끼친 경우 이를 배상하겠습니다.</li>
+      <li>본 서약을 위반할 경우 회사의 정당한 제재를 감수하겠습니다.</li>
+    </ol>
+  </div>
+
+  <div class="section-label">서명</div>
+  <div class="sig-area">
+    <canvas id="sig"></canvas>
+    <button class="sig-clear" onclick="clearSig()">지우기</button>
+    <div class="sig-hint">이 곳에 서명하세요</div>
+  </div>
+  <span class="err" id="err_sig" style="display:none">서명을 해주세요</span>
+
+  <div class="btn-row">
+    <button class="btn-secondary" onclick="resetAll()">초기화</button>
+    <button class="btn-primary" onclick="generatePDF()">PDF 생성 및 다운로드</button>
+  </div>
+</div>
+
+<div class="preview-wrap" id="previewWrap">
+  <div id="preview">
+    <div class="p-title">근 로 서 약 서</div>
+    <div class="p-sub">일용직 근로자 작성용</div>
+    <hr>
+    <table>
+      <tr><td>성  명</td><td id="p_name"></td><td style="background:#eaf0fa;font-weight:600;color:#1a3a6b;width:22%">성  별</td><td id="p_gender"></td></tr>
+      <tr><td>생년월일</td><td id="p_birth"></td><td style="background:#eaf0fa;font-weight:600;color:#1a3a6b">연락처</td><td id="p_phone"></td></tr>
+      <tr><td>주  소</td><td colspan="3" id="p_addr"></td></tr>
+      <tr><td>근무지</td><td colspan="3" id="p_site"></td></tr>
+      <tr><td>근무 기간</td><td colspan="3" id="p_period"></td></tr>
+      <tr><td>담당 업무</td><td colspan="3" id="p_job"></td></tr>
+    </table>
+    <div class="p-pledge-title">[ 서 약 내 용 ]</div>
+    <div class="p-intro">본인은 아래 사항을 성실히 이행할 것을 서약합니다.</div>
+    <ol>
+      <li>근로기준법 및 회사의 제반 규정과 지시를 성실히 준수하겠습니다.</li>
+      <li>업무 수행 중 취득한 회사의 기밀 및 개인정보를 외부에 누설하지 않겠습니다.</li>
+      <li>안전 수칙을 철저히 준수하며, 타 근로자의 안전을 위협하는 행위를 하지 않겠습니다.</li>
+      <li>무단결근·지각·조퇴 등 근무 태만 행위를 하지 않겠습니다.</li>
+      <li>회사 재산을 소중히 다루며, 고의 또는 과실로 손해를 끼친 경우 이를 배상하겠습니다.</li>
+      <li>본 서약을 위반할 경우 회사의 정당한 제재를 감수하겠습니다.</li>
+    </ol>
+    <div class="p-intro">위와 같이 서약합니다.</div>
+    <div class="p-footer">
+      <div id="p_date"></div>
+      <div class="p-sig-row">
+        <div>
+          <div class="p-sig-label">서약인 : <span id="p_sig_name"></span> (인)</div>
+          <div class="p-sig-box"><img id="p_sig_img" class="sig-img" alt="서명"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let sigPad;
+window.addEventListener('load', () => {
+  const canvas = document.getElementById('sig');
+  const ratio = Math.max(window.devicePixelRatio || 1, 1);
+  canvas.width = canvas.offsetWidth * ratio;
+  canvas.height = canvas.offsetHeight * ratio;
+  canvas.getContext('2d').scale(ratio, ratio);
+  sigPad = new SignaturePad(canvas, {minWidth:1.5, maxWidth:2.5, penColor:'#1a3a6b'});
+  sigPad.addEventListener('beginStroke', () => {
+    document.querySelector('.sig-hint').style.display = 'none';
+  });
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f_start').value = today;
+});
+
+function clearSig() {
+  sigPad.clear();
+  document.querySelector('.sig-hint').style.display = 'block';
+}
+
+function resetAll() {
+  ['f_name','f_birth','f_phone','f_addr','f_start','f_end','f_site','f_job'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f_gender').value = '';
+  clearSig();
+  document.querySelectorAll('.err').forEach(e => e.style.display = 'none');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function validate() {
+  let ok = true;
+  const checks = [
+    {id:'f_name', err:'err_name'},
+    {id:'f_birth', err:'err_birth'},
+    {id:'f_phone', err:'err_phone'},
+    {id:'f_addr', err:'err_addr'},
+    {id:'f_start', err:'err_start'},
+    {id:'f_site', err:'err_site'},
+  ];
+  checks.forEach(({id, err}) => {
+    const val = document.getElementById(id).value.trim();
+    const errEl = document.getElementById(err);
+    if (!val) { errEl.style.display = 'block'; ok = false; }
+    else errEl.style.display = 'none';
+  });
+  if (sigPad.isEmpty()) {
+    document.getElementById('err_sig').style.display = 'block';
+    ok = false;
+  } else {
+    document.getElementById('err_sig').style.display = 'none';
+  }
+  return ok;
+}
+
+function fmtDate(val) {
+  if (!val) return '';
+  const [y,m,d] = val.split('-');
+  return `${y}년 ${m}월 ${d}일`;
+}
+
+async function generatePDF() {
+  if (!validate()) { showToast('필수 항목을 모두 입력해주세요'); return; }
+  const btn = document.querySelector('.btn-primary');
+  btn.textContent = 'PDF 생성 중...';
+  btn.disabled = true;
+
+  const name = document.getElementById('f_name').value.trim();
+  const birth = document.getElementById('f_birth').value;
+  const phone = document.getElementById('f_phone').value.trim();
+  const addr = document.getElementById('f_addr').value.trim();
+  const gender = document.getElementById('f_gender').value;
+  const start = document.getElementById('f_start').value;
+  const end = document.getElementById('f_end').value;
+  const site = document.getElementById('f_site').value.trim();
+  const job = document.getElementById('f_job').value.trim();
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일`;
+  const period = end ? `${fmtDate(start)} ~ ${fmtDate(end)}` : `${fmtDate(start)} ~`;
+
+  document.getElementById('p_name').textContent = name;
+  document.getElementById('p_birth').textContent = fmtDate(birth);
+  document.getElementById('p_phone').textContent = phone;
+  document.getElementById('p_addr').textContent = addr;
+  document.getElementById('p_gender').textContent = gender || '-';
+  document.getElementById('p_site').textContent = site;
+  document.getElementById('p_period').textContent = period;
+  document.getElementById('p_job').textContent = job || '-';
+  document.getElementById('p_date').textContent = dateStr;
+  document.getElementById('p_sig_name').textContent = name;
+  document.getElementById('p_sig_img').src = sigPad.toDataURL();
+
+  const wrap = document.getElementById('previewWrap');
+  wrap.style.display = 'block';
+
+  await new Promise(r => setTimeout(r, 200));
+  const preview = document.getElementById('preview');
+
+  try {
+    const canvas = await html2canvas(preview, {scale:2, useCORS:true, backgroundColor:'#ffffff'});
+    const imgData = canvas.toDataURL('image/png');
+    const {jsPDF} = window.jspdf;
+    const pdf = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const pW = pdf.internal.pageSize.getWidth();
+    const pH = pdf.internal.pageSize.getHeight();
+    const ratio = canvas.width / canvas.height;
+    const imgH = pW / ratio;
+    if (imgH <= pH) {
+      pdf.addImage(imgData,'PNG',0,0,pW,imgH);
+    } else {
+      const pages = Math.ceil(imgH / pH);
+      for (let i = 0; i < pages; i++) {
+        if (i > 0) pdf.addPage();
+        pdf.addImage(imgData,'PNG',0,-i*pH,pW,imgH);
+      }
+    }
+    pdf.save(`근로서약서_${name}_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}.pdf`);
+    showToast(`근로서약서_${name}.pdf 다운로드 완료`);
+  } catch(e) {
+    showToast('PDF 생성 중 오류가 발생했습니다');
+    console.error(e);
+  }
+
+  wrap.style.display = 'none';
+  btn.textContent = 'PDF 생성 및 다운로드';
+  btn.disabled = false;
+}
+</script>
